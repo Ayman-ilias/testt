@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PH Tube</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+     rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" 
+     crossorigin="anonymous">
+     <link rel="stylesheet" href="./style.css">
+     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        #videoContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .videoCard {
+            width: calc(25% - 20px); /* Four videos in one row, considering 20px gap */
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        .videoCard img {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+        }
+        .iicon{
+            padding-left:2px;
+        }
+
+        .noVideoMessage {
+            width: 100%;
+            text-align: center;
+        }
+
+        .noVideoMessage img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .authorInfo {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .authorInfo img {
+            width: 30px; /* Adjust the size as needed */
+            height: 30px; /* Adjust the size as needed */
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .authorInfo p {
+            margin: 0;
+        }
+
+        .verifiedIcon {
+            width: 20px; /* Adjust the size as needed */
+            height: 20px; /* Adjust the size as needed */
+            margin-left: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .videoCard {
+                width: calc(100% - 20px); /* One video in one row for smaller screens */
+            }
+        }
+
+        .catagory {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 20px;
+        }
+
+        .catagory button {
+            padding: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar bg-body">
+        <div class="container-fluid pt-3 mb-4">
+            <a class="navbar-brand" href="#">
+                <img src="./Logo.png" alt="Ph-Tube">
+            </a>
+            <button class="btn butto btn-outline-success" onclick="onSortByViewed()">Sort By Viewed</button>
+            <button class="btn butto btn-outline-danger">Blog</button>
+            </form>
+        </div>
+    </nav>
+    <hr>
+
+    <!-- Category Buttons -->
+    <div class="catagory d-flex align-items-center justify-content-center gap-4 mt-4">
+        <button class="btn butto btn-outline-success" onclick="onCategoryChange('1000')">All</button>
+        <button class="btn butto btn-outline-success" onclick="onCategoryChange('1001')">Quran</button>
+        <button class="btn butto btn-outline-success" onclick="onCategoryChange('1003')">Programming</button>
+        <button class="btn butto btn-outline-success" onclick="onCategoryChange('1005')">Education</button>
+    </div>
+
+    <!-- Container to display videos -->
+<div id="videoContainer"></div>
+
+<script>
+    let currentCategoryId = '1000'; // Default category
+    let sortByViews = false; // Initial sorting state
+
+    // Function to fetch JSON data from a given URL
+    async function fetchData(url) {
+        const response = await fetch(url);
+        const data = await response.json();
+        return data;
+    }
+
+    // Function to filter videos by category ID
+    function getVideosByCategory(videos, categoryId) {
+        return videos.filter(video => categoryId === "1000" || video.category_id === categoryId);
+    }
+
+    // Function to sort videos by views
+    function sortVideosByViews(videos) {
+        return videos.slice().sort((a, b) => {
+            const viewsA = parseInt(a.others.views.replace('K', '000'));
+            const viewsB = parseInt(b.others.views.replace('K', '000'));
+            return viewsB - viewsA;
+        });
+    }
+
+    // Function to convert seconds to hours and minutes
+    function convertTime(seconds) {
+        if (!seconds) return ''; // Return an empty string if no posted date
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return `${hours} hours ${minutes} minutes ago`;
+    }
+
+    // Function to display videos in the UI
+    function displayVideos(videos) {
+        const videoContainer = document.getElementById('videoContainer');
+        videoContainer.innerHTML = '';
+
+        if (videos.length === 0) {
+            const noVideoMessage = document.createElement('div');
+            noVideoMessage.className = 'noVideoMessage';
+            noVideoMessage.innerHTML = `
+                <img src="./Icon.png" alt="No videos available" style="max-width: 100%;">
+                <h1>No Videos Available Here</h1>
+            `;
+            videoContainer.appendChild(noVideoMessage);
+        } else {
+            const videosToDisplay = sortByViews ? sortVideosByViews(videos) : videos;
+
+            videosToDisplay.forEach(video => {
+                const videoElement = document.createElement('div');
+                videoElement.className = 'videoCard';
+                videoElement.innerHTML = `
+                    <img src="${video.thumbnail}" alt="${video.title}">
+                    <h3>${video.title}</h3>
+                    <p>Views: ${video.others.views}</p>
+                    ${video.others.posted_date ? `<p>${convertTime(video.others.posted_date)}</p>` : ''}
+                    <div class="authorInfo">
+                        <img src="${video.authors[0].profile_picture}" alt="Profile Picture">
+                        <p>${video.authors[0].profile_name}</p>
+                        ${video.authors[0].verified ? '<i class="fa-solid fa-circle-check iicon"></i>' : ''}
+                    </div>
+                `;
+                videoContainer.appendChild(videoElement);
+            });
+        }
+    }
+
+    // Function to handle category change
+    async function onCategoryChange(categoryId) {
+        currentCategoryId = categoryId;
+        try {
+            // Fetch video data
+            const videoData = await fetchData('./file.json');
+            const videos = videoData.data;
+
+            // Get videos based on the selected category
+            const categoryVideos = getVideosByCategory(videos, currentCategoryId);
+
+            // Display the videos in the UI
+            displayVideos(categoryVideos);
+        } catch (error) {
+            console.error('Error fetching or displaying data:', error);
+        }
+    }
+
+    // Function to handle sorting by viewed
+    function onSortByViewed() {
+        sortByViews = !sortByViews;
+        onCategoryChange(currentCategoryId); // Refresh the displayed videos after sorting
+    }
+
+    // Initial load
+    onCategoryChange(currentCategoryId);
+</script>
+
+
+</body>
+</html>
